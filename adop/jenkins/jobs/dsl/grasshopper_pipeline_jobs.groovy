@@ -4,25 +4,25 @@ def projectFolderName = "${PROJECT_NAME}"
 
 // Variables
 // **The git repo variables will be changed to the users' git repositories manually in the Jenkins jobs**
-def skeletonAppgitRepo = "YOUR_APPLICATION_REPO"
-def skeletonAppGitUrl = "ssh://jenkins@gerrit:29418/${PROJECT_NAME}/" + skeletonAppgitRepo
+def grasshopperAppgitRepo = "grasshoper-greenfield"
+def grasshopperAppGitUrl = "ssh://jenkins@gerrit:29418/${PROJECT_NAME}/" + grasshopperAppgitRepo
 def regressionTestGitRepo = "YOUR_REGRESSION_TEST_REPO"
 def regressionTestGitUrl = "ssh://jenkins@gerrit:29418/${PROJECT_NAME}/" + regressionTestGitRepo
 
 // Jobs
-def buildAppJob = freeStyleJob(projectFolderName + "/Skeleton_Application_Build")
-def unitTestJob = freeStyleJob(projectFolderName + "/Skeleton_Application_Unit_Tests")
-def codeAnalysisJob = freeStyleJob(projectFolderName + "/Skeleton_Application_Code_Analysis")
-def deployJob = freeStyleJob(projectFolderName + "/Skeleton_Application_Deploy")
-def regressionTestJob = freeStyleJob(projectFolderName + "/Skeleton_Application_Regression_Tests")
+def buildAppJob = freeStyleJob(projectFolderName + "/grasshopper_Application_Build")
+def unitTestJob = freeStyleJob(projectFolderName + "/grasshopper_Application_Unit_Tests")
+def codeAnalysisJob = freeStyleJob(projectFolderName + "/grasshopper_Application_Code_Analysis")
+def deployJob = freeStyleJob(projectFolderName + "/grasshopper_Application_Deploy")
+def regressionTestJob = freeStyleJob(projectFolderName + "/grasshopper_Application_Regression_Tests")
 
 // Views
-def pipelineView = buildPipelineView(projectFolderName + "/Skeleton_Application")
+def pipelineView = buildPipelineView(projectFolderName + "/grasshopper_Application")
 
 pipelineView.with{
-    title('Skeleton Application Pipeline')
+    title('grasshopper Application Pipeline')
     displayedBuilds(5)
-    selectedJob(projectFolderName + "/Skeleton_Application_Build")
+    selectedJob(projectFolderName + "/grasshopper_Application_Build")
     showPipelineParameters()
     showPipelineDefinitionHeader()
     refreshFrequency(5)
@@ -34,14 +34,14 @@ pipelineView.with{
 // New jobs can be introduced into the pipeline as required
 
 buildAppJob.with{
-	description("Skeleton application build job.")
+	description("grasshopper application build job.")
 	scm{
 		git{
 			remote{
-				url(skeletonAppGitUrl)
+				url(grasshopperAppGitUrl)
 				credentials("adop-jenkins-master")
 			}
-			branch("*/master")
+			branch("*/Development")
 		}
 	}
 	environmentVariables {
@@ -64,7 +64,7 @@ buildAppJob.with{
 			gerritxml / 'gerritProjects' {
 			  'com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.GerritProject' {
 				compareType("PLAIN")
-				pattern(projectFolderName + "/" + skeletonAppgitRepo)
+				pattern(projectFolderName + "/" + grasshopperAppgitRepo)
 				'branches' {
 				  'com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.Branch' {
 					compareType("PLAIN")
@@ -78,11 +78,13 @@ buildAppJob.with{
 		}
 	}
 	steps {
-		shell('''## YOUR BUILD STEPS GO HERE'''.stripMargin())
+		shell('''
+		    |docker build -t guest_interface guest_interface 
+		'''.stripMargin())
 	}
 	publishers{
 		downstreamParameterized{
-		  trigger(projectFolderName + "/Skeleton_Application_Unit_Tests"){
+		  trigger(projectFolderName + "/grasshopper_Application_Unit_Tests"){
 			condition("UNSTABLE_OR_BETTER")
 			parameters{
 			  predefinedProp("B",'${BUILD_NUMBER}')
@@ -94,10 +96,10 @@ buildAppJob.with{
 }
 
 unitTestJob.with{
-  description("This job runs unit tests on our skeleton application.")
+  description("This job runs unit tests on our grasshopper application.")
   parameters{
     stringParam("B",'',"Parent build number")
-    stringParam("PARENT_BUILD","Skeleton_Application_Build","Parent build name")
+    stringParam("PARENT_BUILD","grasshopper_Application_Build","Parent build name")
   }
   wrappers {
     preBuildCleanup()
@@ -117,7 +119,7 @@ unitTestJob.with{
   }
   publishers{
     downstreamParameterized{
-      trigger(projectFolderName + "/Skeleton_Application_Code_Analysis"){
+      trigger(projectFolderName + "/grasshopper_Application_Code_Analysis"){
         condition("UNSTABLE_OR_BETTER")
         parameters{
           predefinedProp("B",'${B}')
@@ -129,10 +131,10 @@ unitTestJob.with{
 }
 
 codeAnalysisJob.with{
-  description("This job runs code quality analysis for our skeleton application using SonarQube.")
+  description("This job runs code quality analysis for our grasshopper application using SonarQube.")
   parameters{
     stringParam("B",'',"Parent build number")
-    stringParam("PARENT_BUILD","Skeleton_Application_Build","Parent build name")
+    stringParam("PARENT_BUILD","grasshopper_Application_Build","Parent build name")
   }
   environmentVariables {
       env('WORKSPACE_NAME',workspaceFolderName)
@@ -150,7 +152,7 @@ codeAnalysisJob.with{
   }
   publishers{
     downstreamParameterized{
-      trigger(projectFolderName + "/Skeleton_Application_Deploy"){
+      trigger(projectFolderName + "/grasshopper_Application_Deploy"){
         condition("UNSTABLE_OR_BETTER")
         parameters{
           predefinedProp("B",'${B}')
@@ -162,10 +164,10 @@ codeAnalysisJob.with{
 }
 
 deployJob.with{
-  description("This job deploys the skeleton application to the CI environment")
+  description("This job deploys the grasshopper application to the CI environment")
   parameters{
     stringParam("B",'',"Parent build number")
-    stringParam("PARENT_BUILD","Skeleton_Application_Build","Parent build name")
+    stringParam("PARENT_BUILD","grasshopper_Application_Build","Parent build name")
     stringParam("ENVIRONMENT_NAME","CI","Name of the environment.")
   }
   wrappers {
@@ -184,7 +186,7 @@ deployJob.with{
   }
   publishers{
     downstreamParameterized{
-      trigger(projectFolderName + "/Skeleton_Application_Regression_Tests"){
+      trigger(projectFolderName + "/grasshopper_Application_Regression_Tests"){
         condition("UNSTABLE_OR_BETTER")
         parameters{
           predefinedProp("B",'${B}')
@@ -197,10 +199,10 @@ deployJob.with{
 }
 
 regressionTestJob.with{
-  description("This job runs regression tests on the deployed skeleton application")
+  description("This job runs regression tests on the deployed grasshopper application")
   parameters{
     stringParam("B",'',"Parent build number")
-    stringParam("PARENT_BUILD","Skeleton_Application_Build","Parent build name")
+    stringParam("PARENT_BUILD","grasshopper_Application_Build","Parent build name")
     stringParam("ENVIRONMENT_NAME","CI","Name of the environment.")
   }
   scm{
