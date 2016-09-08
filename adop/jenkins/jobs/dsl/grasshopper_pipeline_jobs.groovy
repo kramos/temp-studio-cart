@@ -182,7 +182,13 @@ deployJob.with{
   }
   label("docker")
   steps {
-    shell('''## YOUR DEPLOY STEPS GO HERE'''.stripMargin())
+    shell('''## DEPLOY STEPS 
+      | docker rm -f guest-interface-ci || true
+      | docker run -d -t --name="guest-interface-ci" -p 9999:80 guest_interface
+      | docker ps
+      | sleep 5
+      | curl localhost:9999
+    '''.stripMargin())
   }
   publishers{
     downstreamParameterized{
